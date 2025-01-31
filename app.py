@@ -23,17 +23,19 @@ def download():
     url = data.get('url')
 
     try:
+        # yt-dlpのオプション設定
         ydl_opts = {
             'format': 'best',
             'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
         }
+        
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             video_info = ydl.extract_info(url, download=True)
-            # ダウンロードされたファイルのフルパスを生成
+            # 動画のファイルパスを生成
             file_path = os.path.join(DOWNLOAD_FOLDER, f"{video_info['title']}.{video_info['ext']}")
-        
+
         return jsonify({'download_link': file_path}), 200
-    
+
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
