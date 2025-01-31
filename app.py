@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import yt_dlp
 import os
@@ -34,7 +34,8 @@ def download():
             # 動画のファイルパスを生成
             file_path = os.path.join(DOWNLOAD_FOLDER, f"{video_info['title']}.{video_info['ext']}")
 
-        return jsonify({'download_link': file_path}), 200
+        # ダウンロードファイルを返す
+        return send_file(file_path, as_attachment=True)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 400
