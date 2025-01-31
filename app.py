@@ -1,8 +1,12 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 import yt_dlp
 import os
 
 app = Flask(__name__)
+
+# CORS設定
+CORS(app, origins="https://front-service.vercel.app")
 
 # 動画の保存先
 DOWNLOAD_FOLDER = 'downloads'
@@ -11,7 +15,7 @@ if not os.path.exists(DOWNLOAD_FOLDER):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return "API is working!"
 
 @app.route('/download', methods=['POST'])
 def download():
