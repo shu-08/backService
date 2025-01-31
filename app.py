@@ -6,7 +6,7 @@ CORS(app)  # すべてのオリジンを許可
 
 @app.route("/")
 def get_data():
-    return jsonify({"message": "Hello from Flask!"})
+    return jsonify({"message": "しゅう"})
 
 if __name__ == "__main__":
     app.run(debug=True)
