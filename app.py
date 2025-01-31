@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template  # render_template をインポート
 import yt_dlp
 import os
 
@@ -11,7 +11,7 @@ if not os.path.exists(DOWNLOAD_FOLDER):
 
 @app.route('/')
 def index():
-    return render_template('index.html')  # ここはそのままHTMLを返します
+    return render_template('index.html')  # ここでテンプレートを返す
 
 @app.route('/download', methods=['POST'])
 def download():
