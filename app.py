@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template  # render_template をインポート
+from flask import Flask, render_template, request, jsonify
 import yt_dlp
 import os
 
@@ -11,12 +11,13 @@ if not os.path.exists(DOWNLOAD_FOLDER):
 
 @app.route('/')
 def index():
-    return render_template('index.html')  # ここでテンプレートを返す
+    return render_template('index.html')
 
 @app.route('/download', methods=['POST'])
 def download():
-    url = request.form['url']  # フロントエンドから送られたURLを取得
-    
+    data = request.get_json()
+    url = data.get('url')
+
     try:
         ydl_opts = {
             'format': 'best',
@@ -24,13 +25,12 @@ def download():
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             video_info = ydl.extract_info(url, download=True)
+            # ダウンロードされたファイルのフルパスを生成
             file_path = os.path.join(DOWNLOAD_FOLDER, f"{video_info['title']}.{video_info['ext']}")
         
-        # 成功時にJSON形式でダウンロードリンクを返す
-        return jsonify({'download_link': file_path})
+        return jsonify({'download_link': file_path}), 200
     
     except Exception as e:
-        # エラーが発生した場合もJSON形式でエラーメッセージを返す
         return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
