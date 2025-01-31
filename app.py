@@ -1,9 +1,7 @@
-
 from flask import Flask, request, jsonify
 import yt_dlp
 import os
-from flask_cors import CORS  # flask_corsをインポート
-CORS(app, resources={r"/*": {"origins": "https://front-service.vercel.app"}})
+
 app = Flask(__name__)
 
 # 動画の保存先
@@ -13,11 +11,11 @@ if not os.path.exists(DOWNLOAD_FOLDER):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html')  # ここはそのままHTMLを返します
 
 @app.route('/download', methods=['POST'])
 def download():
-    url = request.form['url']
+    url = request.form['url']  # フロントエンドから送られたURLを取得
     
     try:
         ydl_opts = {
@@ -26,10 +24,9 @@ def download():
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             video_info = ydl.extract_info(url, download=True)
-            # ダウンロードされたファイルのフルパスを生成
             file_path = os.path.join(DOWNLOAD_FOLDER, f"{video_info['title']}.{video_info['ext']}")
         
-        # 成功時にJSON形式でファイルパスを返す
+        # 成功時にJSON形式でダウンロードリンクを返す
         return jsonify({'download_link': file_path})
     
     except Exception as e:
