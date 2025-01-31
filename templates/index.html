@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動画ダウンロード</title>
+    <link rel="stylesheet" href="styles.css"> <!-- スタイルを追加する場合 -->
+</head>
+<body>
+    <div class="container">
+        <h1>動画ダウンロード</h1>
+        <form id="downloadForm">
+            <label for="url">動画URLを入力:</label>
+            <input type="text" id="url" name="url" placeholder="動画のURL" required>
+            <button type="submit">ダウンロード</button>
+        </form>
+
+        <div id="errorMessage" style="color: red; display: none;"></div> <!-- エラーメッセージ表示 -->
+        <div id="downloadLinkContainer" style="display: none;">
+            <p>ダウンロードリンク:</p>
+            <a id="downloadLink" href="" target="_blank" download>ここをクリックしてダウンロード</a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/3.6.2/fetch.min.js"></script> <!-- Fetch APIサポート -->
+    <script>
+        const form = document.getElementById('downloadForm');
+        const urlInput = document.getElementById('url');
+        const errorMessage = document.getElementById('errorMessage');
+        const downloadLinkContainer = document.getElementById('downloadLinkContainer');
+        const downloadLink = document.getElementById('downloadLink');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                errorMessage.textContent = "URLを入力してください";
+                errorMessage.style.display = "block";
+                return;
+            }
+
+            errorMessage.style.display = "none";
+            downloadLinkContainer.style.display = "none"; // 新しいリクエストがある場合は前のリンクを非表示
+
+            try {
+                // FlaskのバックエンドAPIにリクエストを送信
+                const response = await fetch('https://backservice-oqui.onrender.com/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        url: url,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('APIエラーが発生しました');
+                }
+
+                const data = await response.json();
+
+                if (data.download_link) {
+                    downloadLink.href = data.download_link;
+                    downloadLinkContainer.style.display = "block";  // リンクを表示
+                } else if (data.error) {
+                    errorMessage.textContent = `エラー: ${data.error}`;
+                    errorMessage.style.display = "block";
+                }
+            } catch (error) {
+                errorMessage.textContent = `エラー: ${error.message}`;
+                errorMessage.style.display = "block";
+            }
+        });
+    </script>
+</body>
+</html>
