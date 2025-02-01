@@ -1,12 +1,10 @@
-from flask import Flask, request, jsonify, send_file, safe_join
-from flask_cors import CORS
+from flask import Flask, request, jsonify, send_file
+from werkzeug.utils import safe_join  # 修正
 import yt_dlp
 import os
 import uuid
 
 app = Flask(__name__)
-
-CORS(app, origins="https://front-service.vercel.app")
 
 DOWNLOAD_FOLDER = 'downloads'
 if not os.path.exists(DOWNLOAD_FOLDER):
@@ -19,7 +17,7 @@ def index():
 @app.route('/download', methods=['POST'])
 def download():
     data = request.get_json()
-    urls = data.get('urls', [])  # 複数のURLをリストとして受け取る
+    urls = data.get('urls', [])  
 
     if not urls:
         return jsonify({'error': 'URLが指定されていません'}), 400
@@ -28,7 +26,6 @@ def download():
 
     for url in urls:
         try:
-            # ランダムなファイル名を生成
             random_filename = uuid.uuid4().hex
             ydl_opts = {
                 'format': 'best',
@@ -37,11 +34,10 @@ def download():
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 video_info = ydl.extract_info(url, download=True)
-                ext = video_info.get('ext', 'mp4')  # 拡張子がない場合に備えてデフォルト設定
+                ext = video_info.get('ext', 'mp4')
                 file_name = f"{random_filename}.{ext}"
                 file_path = os.path.join(DOWNLOAD_FOLDER, file_name)
 
-            # ファイルが存在するか確認してからリンクを追加
             if os.path.exists(file_path):
                 download_links.append(f"https://backservice-oqui.onrender.com/download_file/{file_name}")
             else:
