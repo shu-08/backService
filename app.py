@@ -5,10 +5,8 @@ import os
 
 app = Flask(__name__)
 
-# CORS設定
 CORS(app, origins="https://front-service.vercel.app")
 
-# 動画の保存先
 DOWNLOAD_FOLDER = 'downloads'
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
@@ -20,25 +18,39 @@ def index():
 @app.route('/download', methods=['POST'])
 def download():
     data = request.get_json()
-    url = data.get('url')
+    urls = data.get('urls', [])  # リストとして受け取る
 
-    try:
-        # yt-dlpのオプション設定
-        ydl_opts = {
-            'format': 'best',
-            'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
-        }
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            video_info = ydl.extract_info(url, download=True)
-            # 動画のファイルパスを生成
-            file_path = os.path.join(DOWNLOAD_FOLDER, f"{video_info['title']}.{video_info['ext']}")
+    if not urls:
+        return jsonify({'error': 'URLが指定されていません'}), 400
 
-        # ダウンロードファイルを返す
+    download_links = []
+
+    for url in urls:
+        try:
+            ydl_opts = {
+                'format': 'best',
+                'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
+            }
+            
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                video_info = ydl.extract_info(url, download=True)
+                file_name = f"{video_info['title']}.{video_info['ext']}"
+                file_path = os.path.join(DOWNLOAD_FOLDER, file_name)
+
+            # 公開用のリンク（本番環境では適切なURLを指定する）
+            download_links.append(f"https://backservice-oqui.onrender.com/download_file/{file_name}")
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 400
+
+    return jsonify({'download_links': download_links})
+
+@app.route('/download_file/<filename>', methods=['GET'])
+def download_file(filename):
+    file_path = os.path.join(DOWNLOAD_FOLDER, filename)
+    if os.path.exists(file_path):
         return send_file(file_path, as_attachment=True)
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    return jsonify({'error': 'ファイルが見つかりません'}), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
