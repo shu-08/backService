@@ -1,7 +1,8 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, safe_join
 from flask_cors import CORS
 import yt_dlp
 import os
+import uuid
 
 app = Flask(__name__)
 
@@ -18,7 +19,7 @@ def index():
 @app.route('/download', methods=['POST'])
 def download():
     data = request.get_json()
-    urls = data.get('urls', [])  # リストとして受け取る
+    urls = data.get('urls', [])  # 複数のURLをリストとして受け取る
 
     if not urls:
         return jsonify({'error': 'URLが指定されていません'}), 400
@@ -27,18 +28,24 @@ def download():
 
     for url in urls:
         try:
+            # ランダムなファイル名を生成
+            random_filename = uuid.uuid4().hex
             ydl_opts = {
                 'format': 'best',
-                'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
+                'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'{random_filename}.%(ext)s'),
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 video_info = ydl.extract_info(url, download=True)
-                file_name = f"{video_info['title']}.{video_info['ext']}"
+                ext = video_info.get('ext', 'mp4')  # 拡張子がない場合に備えてデフォルト設定
+                file_name = f"{random_filename}.{ext}"
                 file_path = os.path.join(DOWNLOAD_FOLDER, file_name)
 
-            # 公開用のリンク（本番環境では適切なURLを指定する）
-            download_links.append(f"https://backservice-oqui.onrender.com/download_file/{file_name}")
+            # ファイルが存在するか確認してからリンクを追加
+            if os.path.exists(file_path):
+                download_links.append(f"https://backservice-oqui.onrender.com/download_file/{file_name}")
+            else:
+                return jsonify({'error': f'ファイルが見つかりません: {file_name}'}), 400
 
         except Exception as e:
             return jsonify({'error': str(e)}), 400
@@ -47,7 +54,8 @@ def download():
 
 @app.route('/download_file/<filename>', methods=['GET'])
 def download_file(filename):
-    file_path = os.path.join(DOWNLOAD_FOLDER, filename)
+    file_path = safe_join(DOWNLOAD_FOLDER, filename)
+
     if os.path.exists(file_path):
         return send_file(file_path, as_attachment=True)
     return jsonify({'error': 'ファイルが見つかりません'}), 404
